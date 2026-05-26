@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roteiro Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- ── PROGRESS BAR ───────────────────────────────────────────── -->
+<div class="progress-bar" id="progress-bar"></div>
+
+<!-- ══════════════════════ SIDEBAR ═══════════════════════════════ -->
+<aside id="sidebar">
+  <div class="sidebar-head">
+    <span class="brand">Roteiros</span>
+    <div class="sidebar-actions">
+      <button class="icon-btn" id="new-btn" title="Novo roteiro">＋</button>
+    </div>
+  </div>
+
+  <div class="sidebar-search">
+    <input type="text" id="search-input" placeholder="Buscar roteiro…">
+  </div>
+
+  <div class="roteiro-list" id="roteiro-list"></div>
+
+  <div class="upload-area">
+    <label class="upload-btn">
+      ⊕ Importar .md
+      <input type="file" accept=".md,.markdown" id="upload-input">
+    </label>
+  </div>
+</aside>
+
+<!-- ══════════════════════ MAIN ══════════════════════════════════ -->
+<div id="main">
+
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <button class="toggle-sidebar-btn" id="toggle-sidebar" title="Esconder sidebar">☰</button>
+    <div id="topbar-title">—</div>
+    <div class="topbar-right">
+      <button class="tab-btn active" data-panel="viewer">Visualizar</button>
+      <button class="tab-btn" data-panel="teleprompter">Teleprompter</button>
+      <button class="tab-btn" data-panel="editor">Editar</button>
+      <div style="width:1px;height:20px;background:var(--border);margin:0 2px;"></div>
+      <button class="icon-btn" id="export-pdf-btn" title="Exportar PDF">⬇ PDF</button>
+      <div class="font-ctrl">
+        <button id="font-down" title="Diminuir fonte">A−</button>
+        <span id="fs-display">16px</span>
+        <button id="font-up" title="Aumentar fonte">A+</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANELS CONTAINER -->
+  <div id="panels">
+
+    <!-- Empty state -->
+    <div id="empty-state">
+      <div class="es-icon">🎬</div>
+      <p>Selecione ou importe um roteiro para começar.</p>
+    </div>
+
+    <!-- ── VIEWER PANEL ───────────────────────────────────────── -->
+    <div class="panel active" id="viewer-panel">
+      <div id="viewer-content"></div>
+    </div>
+
+    <!-- ── TELEPROMPTER PANEL ─────────────────────────────────── -->
+    <div class="panel" id="teleprompter-panel">
+      <div class="tp-center-line"></div>
+      <div id="tp-track">
+        <div id="tp-text"></div>
+      </div>
+      <div class="tp-controls">
+        <button class="tp-btn" id="tp-font-down">A−</button>
+        <button class="tp-btn" id="tp-font-up">A+</button>
+        <button class="tp-btn primary" id="tp-play-btn">▶ Iniciar</button>
+        <button class="tp-btn" id="tp-reset-btn">↺ Reiniciar</button>
+        <div class="tp-speed-group">
+          <span>Vel.</span>
+          <input type="range" id="tp-speed" min="10" max="150" value="40">
+          <span id="tp-speed-val">40</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── EDITOR PANEL ───────────────────────────────────────── -->
+    <div class="panel" id="editor-panel">
+      <div class="editor-toolbar">
+        <button class="editor-tool-btn" data-action="bold"   title="Negrito"><b>B</b></button>
+        <button class="editor-tool-btn" data-action="italic" title="Itálico"><i>I</i></button>
+        <button class="editor-tool-btn" data-action="code"   title="Código">`c`</button>
+        <button class="editor-tool-btn" data-action="h2"     title="Seção">## Seção</button>
+        <button class="editor-tool-btn" data-action="quote"  title="Blockquote">&gt; fala</button>
+        <div class="editor-sep"></div>
+        <input class="editor-filename" id="editor-filename" type="text" placeholder="nome-do-arquivo">
+        <span style="font-size:11px;color:var(--text-muted)">.md</span>
+        <button class="editor-save-btn" id="editor-save-btn">Salvar</button>
+      </div>
+      <textarea id="editor-area" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
+    </div>
+
+  </div><!-- /panels -->
+
+</div><!-- /main -->
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h3 id="modal-title">Renomear</h3>
+    <input type="text" id="modal-input" placeholder="Nome do roteiro">
+    <div class="modal-actions">
+      <button class="modal-btn" id="modal-cancel">Cancelar</button>
+      <button class="modal-btn primary" id="modal-confirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCROLLTOP -->
+<button class="scrolltop" id="scrolltop-btn">↑</button>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- SCRIPTS -->
+<script src="/js/parser.js"></script>
+<script src="/js/app.js"></script>
+
+<script>
+  // Speed display sync
+  document.getElementById('tp-speed').addEventListener('input', function() {
+    document.getElementById('tp-speed-val').textContent = this.value;
+  });
+</script>
+
+</body>
+</html>
