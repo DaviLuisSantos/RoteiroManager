@@ -826,6 +826,64 @@ body {
 .scrolltop.visible { opacity: 1; }
 .scrolltop:hover { border-color: var(--accent); color: var(--accent); }
 
+/* ── VIEWER STATS BAR ───────────────────────────────────────────── */
+.viewer-stats {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'DM Mono', monospace;
+  padding: 0 0 18px;
+  margin-bottom: 4px;
+  letter-spacing: 0.04em;
+}
+
+/* ── MODAL MESSAGE ──────────────────────────────────────────────── */
+.modal-message {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+/* ── DIRTY INDICATOR ────────────────────────────────────────────── */
+.dirty-dot {
+  font-size: 10px;
+  color: var(--accent);
+  margin-left: 4px;
+  animation: pulse-dot 1.8s ease-in-out infinite;
+  vertical-align: middle;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1;   }
+}
+.editor-save-btn.dirty {
+  box-shadow: 0 0 0 1px var(--accent), 0 0 8px rgba(200,169,110,0.3);
+}
+
+/* ── ROTEIRO ITEM — com preview de busca ────────────────────────── */
+.roteiro-item {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+.roteiro-item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.roteiro-item-preview {
+  display: block;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 2px 0 4px 0;
+  line-height: 1.4;
+}
+
 /* ── PRINT (PDF) ────────────────────────────────────────────────── */
 @media print {
   body { background: #fff; color: #111; overflow: visible; height: auto; }
