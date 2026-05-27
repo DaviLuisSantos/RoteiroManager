@@ -16,12 +16,17 @@ const state = {
   activePanel: 'viewer',
   isDirty:     false,
   tp: {
-    running:  false,
-    speed:    lsGet('rm_tpSpeed', 40),
-    pos:      0,
-    raf:      null,
-    lastTs:   null,
-    fontSize: lsGet('rm_tpFontSize', 36),
+    running:       false,
+    counting:      false,
+    speed:         lsGet('rm_tpSpeed', 40),
+    pos:           0,
+    raf:           null,
+    lastTs:        null,
+    fontSize:      lsGet('rm_tpFontSize', 36),
+    mirrored:      lsGet('rm_tpMirrored', false),
+    timerStart:    0,
+    timerElapsed:  0,
+    timerInterval: null,
   }
 };
 
@@ -455,35 +460,101 @@ function initTeleprompter() {
   $('tp-speed').value    = state.tp.speed;
   $('tp-speed-val').textContent = state.tp.speed;
 
+  recalcTpPadding();
+  resetTeleprompter();
+
+  // Aplica estado do espelho se estava ativo
+  $('tp-content').classList.toggle('mirrored', !!state.tp.mirrored);
+  $('tp-mirror-btn').classList.toggle('active', !!state.tp.mirrored);
+}
+
+function recalcTpPadding() {
   const halfH = tpPanel.offsetHeight / 2;
   tpTrack.style.paddingTop    = halfH + 'px';
   tpTrack.style.paddingBottom = halfH + 'px';
-
-  state.tp.pos = 0;
-  tpTrack.style.transform = 'translateY(0)';
-  if (state.tp.running) stopTeleprompter();
-  updateTpBtn();
 }
 
+// ── COUNTDOWN ────────────────────────────────────────────────────
+function startCountdown() {
+  return new Promise(resolve => {
+    const overlay = $('tp-countdown');
+    const numEl   = $('tp-countdown-num');
+    overlay.style.display = 'flex';
+
+    function showNum(n, cb) {
+      numEl.textContent = n;
+      numEl.className   = '';         // reset animação
+      void numEl.offsetWidth;         // reflow
+      numEl.className   = 'tp-count-in';
+      setTimeout(() => {
+        if (!state.tp.counting) { overlay.style.display = 'none'; resolve(); }
+        else cb();
+      }, 950);
+    }
+
+    showNum(3, () => showNum(2, () => showNum(1, () => {
+      overlay.style.display = 'none';
+      resolve();
+    })));
+  });
+}
+
+// ── TIMER ────────────────────────────────────────────────────────
+function startTimer() {
+  state.tp.timerStart    = Date.now() - (state.tp.timerElapsed * 1000);
+  clearInterval(state.tp.timerInterval);
+  state.tp.timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - state.tp.timerStart) / 1000);
+    state.tp.timerElapsed = elapsed;
+    const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const ss = String(elapsed % 60).padStart(2, '0');
+    $('tp-timer').textContent = `${mm}:${ss}`;
+  }, 500);
+}
+
+function stopTimer() {
+  if (state.tp.timerInterval) {
+    clearInterval(state.tp.timerInterval);
+    state.tp.timerInterval = null;
+    state.tp.timerElapsed  = Math.floor((Date.now() - state.tp.timerStart) / 1000);
+  }
+}
+
+function resetTimer() {
+  stopTimer();
+  state.tp.timerElapsed = 0;
+  $('tp-timer').textContent = '0:00';
+}
+
+// ── TP PLAY BUTTON STATE ─────────────────────────────────────────
 function updateTpBtn() {
   const btn = $('tp-play-btn');
-  btn.textContent = state.tp.running ? '⏸ Pausar' : '▶ Iniciar';
-  btn.className   = state.tp.running ? 'tp-btn' : 'tp-btn primary';
+  if (state.tp.counting) {
+    btn.textContent = '✕ Cancelar';
+    btn.className   = 'tp-btn';
+  } else if (state.tp.running) {
+    btn.textContent = '⏸ Pausar';
+    btn.className   = 'tp-btn';
+  } else {
+    btn.textContent = '▶ Iniciar';
+    btn.className   = 'tp-btn primary';
+  }
 }
 
-function startTeleprompter() {
-  state.tp.running = true;
-  state.tp.lastTs  = null;
-  updateTpBtn();
+// ── SCROLL LOOP (reutilizado pelo start e pelo click-to-resume) ───
+function runScrollLoop() {
+  const progressFill = $('tp-progress-fill');
   function tick(ts) {
     if (!state.tp.running) return;
     if (state.tp.lastTs !== null) {
-      const dt = (ts - state.tp.lastTs) / 1000;
-      state.tp.pos += state.tp.speed * dt;
-      const maxScroll = Math.max(0, tpTrack.offsetHeight - tpPanel.offsetHeight);
+      const dt        = (ts - state.tp.lastTs) / 1000;
+      state.tp.pos   += state.tp.speed * dt;
+      const maxScroll = Math.max(1, tpTrack.offsetHeight - tpPanel.offsetHeight);
+      progressFill.style.width = Math.min(100, state.tp.pos / maxScroll * 100) + '%';
       if (state.tp.pos >= maxScroll) {
         state.tp.pos = maxScroll;
         tpTrack.style.transform = `translateY(-${state.tp.pos}px)`;
+        progressFill.style.width = '100%';
         stopTeleprompter();
         return;
       }
@@ -495,9 +566,32 @@ function startTeleprompter() {
   state.tp.raf = requestAnimationFrame(tick);
 }
 
+// ── START / STOP / RESET ─────────────────────────────────────────
+async function startTeleprompter() {
+  // Início do zero → contagem regressiva
+  if (state.tp.pos === 0) {
+    state.tp.counting = true;
+    updateTpBtn();
+    await startCountdown();
+    // Se foi cancelado durante o countdown, state.tp.counting já é false
+    if (!state.tp.counting) { updateTpBtn(); return; }
+    state.tp.counting = false;
+    updateTpBtn();
+  }
+  // Inicia (ou retoma) o scroll
+  state.tp.running = true;
+  state.tp.lastTs  = null;
+  startTimer();
+  updateTpBtn();
+  runScrollLoop();
+}
+
 function stopTeleprompter() {
-  state.tp.running = false;
+  state.tp.running  = false;
+  state.tp.counting = false;
+  $('tp-countdown').style.display = 'none';
   if (state.tp.raf) { cancelAnimationFrame(state.tp.raf); state.tp.raf = null; }
+  stopTimer();
   updateTpBtn();
 }
 
@@ -505,8 +599,39 @@ function resetTeleprompter() {
   stopTeleprompter();
   state.tp.pos = 0;
   tpTrack.style.transform = 'translateY(0)';
+  $('tp-progress-fill').style.width = '0%';
+  resetTimer();
   updateTpBtn();
 }
+
+// ── ESPELHO ──────────────────────────────────────────────────────
+function toggleMirror() {
+  state.tp.mirrored = !state.tp.mirrored;
+  $('tp-content').classList.toggle('mirrored', state.tp.mirrored);
+  $('tp-mirror-btn').classList.toggle('active', state.tp.mirrored);
+  lsSet('rm_tpMirrored', state.tp.mirrored);
+}
+
+// ── TELA CHEIA ───────────────────────────────────────────────────
+async function toggleFullscreen() {
+  try {
+    if (!document.fullscreenElement) {
+      await tpPanel.requestFullscreen();
+    } else {
+      await document.exitFullscreen();
+    }
+  } catch (e) { /* navegador sem suporte */ }
+}
+
+document.addEventListener('fullscreenchange', () => {
+  const inFs = !!document.fullscreenElement;
+  $('tp-fullscreen-btn').textContent = inFs ? '✕' : '⛶';
+  $('tp-fullscreen-btn').classList.toggle('active', inFs);
+  if (state.activePanel === 'teleprompter') {
+    // Recalcula padding pois altura mudou
+    setTimeout(recalcTpPadding, 100);
+  }
+});
 
 // ── EDITOR ────────────────────────────────────────────────────────
 function initEditor() {
@@ -611,8 +736,18 @@ $('font-up').addEventListener('click',   () => changeFont(1));
 
 // ── TELEPROMPTER CONTROLS ─────────────────────────────────────────
 $('tp-play-btn').addEventListener('click', () => {
-  if (state.tp.running) stopTeleprompter(); else startTeleprompter();
+  if (state.tp.counting) {
+    // Cancela contagem
+    state.tp.counting = false;
+    $('tp-countdown').style.display = 'none';
+    updateTpBtn();
+  } else if (state.tp.running) {
+    stopTeleprompter();
+  } else {
+    startTeleprompter();
+  }
 });
+
 $('tp-reset-btn').addEventListener('click', resetTeleprompter);
 
 $('tp-speed').addEventListener('input', e => {
@@ -632,12 +767,47 @@ $('tp-font-down').addEventListener('click', () => {
   lsSet('rm_tpFontSize', state.tp.fontSize);
 });
 
-// Keyboard: Space = play/pause, R = reset (enquanto no teleprompter)
+$('tp-mirror-btn').addEventListener('click', toggleMirror);
+$('tp-fullscreen-btn').addEventListener('click', toggleFullscreen);
+
+// Click no conteúdo: pausa / retoma (sem countdown ao retomar)
+$('tp-content').addEventListener('click', () => {
+  if (state.tp.counting) return;
+  if (state.tp.running) {
+    stopTeleprompter();
+  } else if (state.tp.pos > 0) {
+    state.tp.running = true;
+    state.tp.lastTs  = null;
+    startTimer();
+    updateTpBtn();
+    runScrollLoop();
+  }
+});
+
+// Keyboard: Space, R, ↑↓ velocidade, M espelho, F tela cheia
 document.addEventListener('keydown', e => {
   if (state.activePanel !== 'teleprompter') return;
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
   if (e.code === 'Space') { e.preventDefault(); $('tp-play-btn').click(); }
   if (e.code === 'KeyR')  { e.preventDefault(); resetTeleprompter(); }
+  if (e.code === 'KeyM')  { e.preventDefault(); toggleMirror(); }
+  if (e.code === 'KeyF')  { e.preventDefault(); toggleFullscreen(); }
+
+  if (e.code === 'ArrowUp') {
+    e.preventDefault();
+    state.tp.speed = Math.min(150, state.tp.speed + 5);
+    $('tp-speed').value = state.tp.speed;
+    $('tp-speed-val').textContent = state.tp.speed;
+    lsSet('rm_tpSpeed', state.tp.speed);
+  }
+  if (e.code === 'ArrowDown') {
+    e.preventDefault();
+    state.tp.speed = Math.max(10, state.tp.speed - 5);
+    $('tp-speed').value = state.tp.speed;
+    $('tp-speed-val').textContent = state.tp.speed;
+    lsSet('rm_tpSpeed', state.tp.speed);
+  }
 });
 
 // ── EDITOR CONTROLS ───────────────────────────────────────────────

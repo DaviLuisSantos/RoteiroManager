@@ -73,21 +73,43 @@
 
     <!-- ── TELEPROMPTER PANEL ─────────────────────────────────── -->
     <div class="panel" id="teleprompter-panel">
+
+      <!-- Barra de progresso -->
+      <div class="tp-progress-bar"><div id="tp-progress-fill"></div></div>
+
+      <!-- Vinhetas de foco -->
+      <div class="tp-vignette-top"></div>
       <div class="tp-center-line"></div>
-      <div id="tp-track">
-        <div id="tp-text"></div>
+      <div class="tp-vignette-bottom"></div>
+
+      <!-- Conteúdo rolável (wrapper para modo espelho) -->
+      <div id="tp-content">
+        <div id="tp-track">
+          <div id="tp-text"></div>
+        </div>
       </div>
+
+      <!-- Overlay de contagem regressiva -->
+      <div id="tp-countdown" style="display:none">
+        <span id="tp-countdown-num">3</span>
+      </div>
+
+      <!-- Controles -->
       <div class="tp-controls">
-        <button class="tp-btn" id="tp-font-down">A−</button>
-        <button class="tp-btn" id="tp-font-up">A+</button>
+        <button class="tp-btn" id="tp-font-down" title="Diminuir fonte (A−)">A−</button>
+        <button class="tp-btn" id="tp-font-up"   title="Aumentar fonte (A+)">A+</button>
         <button class="tp-btn primary" id="tp-play-btn">▶ Iniciar</button>
-        <button class="tp-btn" id="tp-reset-btn">↺ Reiniciar</button>
+        <button class="tp-btn" id="tp-reset-btn" title="Reiniciar (R)">↺</button>
         <div class="tp-speed-group">
           <span>Vel.</span>
           <input type="range" id="tp-speed" min="10" max="150" value="40">
           <span id="tp-speed-val">40</span>
         </div>
+        <span class="tp-timer" id="tp-timer">0:00</span>
+        <button class="tp-btn-icon" id="tp-mirror-btn"     title="Modo espelho (M)">⇔</button>
+        <button class="tp-btn-icon" id="tp-fullscreen-btn" title="Tela cheia (F)">⛶</button>
       </div>
+
     </div>
 
     <!-- ── EDITOR PANEL ───────────────────────────────────────── -->

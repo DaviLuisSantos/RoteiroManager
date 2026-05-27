@@ -487,13 +487,68 @@ body {
 #teleprompter-panel {
   background: #000;
   overflow: hidden;
-  /* position:absolute e inset:0 vêm de .panel — não sobrescrever aqui */
 }
+
+/* Barra de progresso do TP */
+.tp-progress-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: rgba(255,255,255,0.07);
+  z-index: 20;
+  pointer-events: none;
+}
+#tp-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  width: 0%;
+  transition: width 0.15s linear;
+}
+
+/* Vinhetas de foco */
+.tp-vignette-top {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 180px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 4;
+}
+.tp-vignette-bottom {
+  position: absolute;
+  bottom: 64px; /* acima dos controles */
+  left: 0; right: 0;
+  height: 180px;
+  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* Linha central de leitura */
+.tp-center-line {
+  position: absolute;
+  top: 50%;
+  left: 5vw;
+  right: 5vw;
+  height: 2px;
+  background: rgba(200,169,110,0.22);
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Wrapper de conteúdo (alvo do modo espelho) */
+#tp-content {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.35s ease;
+}
+#tp-content.mirrored { transform: scaleX(-1); }
 
 #tp-track {
   position: absolute;
   top: 0; left: 0; right: 0;
-  /* padding vertical definido via JS em initTeleprompter() para = metade da altura do painel */
   padding-left: 8vw;
   padding-right: 8vw;
 }
@@ -509,53 +564,105 @@ body {
   text-align: center;
 }
 
-.tp-controls {
+/* Overlay de contagem regressiva */
+#tp-countdown {
   position: absolute;
-  bottom: 0; left: 0; right: 0;
-  padding: 16px 24px;
-  background: linear-gradient(transparent, rgba(0,0,0,0.9));
+  inset: 0;
+  background: rgba(0,0,0,0.82);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  z-index: 30;
+}
+#tp-countdown-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 130px;
+  font-weight: 800;
+  color: var(--accent);
+  opacity: 0;
+  transform: scale(1.4);
+}
+#tp-countdown-num.tp-count-in {
+  animation: tp-countdown-pop 0.92s ease-out forwards;
+}
+@keyframes tp-countdown-pop {
+  0%   { opacity: 0;   transform: scale(1.4); }
+  18%  { opacity: 1;   transform: scale(1);   }
+  75%  { opacity: 1;   transform: scale(0.92); }
+  100% { opacity: 0;   transform: scale(0.8); }
+}
+
+/* Barra de controles */
+.tp-controls {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 12px 20px 14px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.92));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   z-index: 10;
+  flex-wrap: wrap;
 }
 .tp-btn {
   background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.18);
   color: #fff;
   font-family: 'DM Mono', monospace;
   font-size: 13px;
-  padding: 8px 20px;
+  padding: 7px 18px;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s;
+  white-space: nowrap;
 }
 .tp-btn:hover { background: rgba(255,255,255,0.2); }
 .tp-btn.primary { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
 .tp-btn.primary:hover { background: #d4b87a; }
 
+.tp-btn-icon {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.55);
+  font-size: 15px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.tp-btn-icon:hover { background: rgba(255,255,255,0.18); color: #fff; }
+.tp-btn-icon.active {
+  background: rgba(200,169,110,0.18);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .tp-speed-group {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: rgba(255,255,255,0.6);
+  color: rgba(255,255,255,0.55);
   font-size: 12px;
 }
 .tp-speed-group input[type="range"] {
-  width: 100px;
+  width: 90px;
   accent-color: var(--accent);
 }
 
-.tp-center-line {
-  position: absolute;
-  top: 50%;
-  left: 5vw;
-  right: 5vw;
-  height: 2px;
-  background: rgba(200,169,110,0.25);
-  pointer-events: none;
-  z-index: 5;
+/* Timer */
+.tp-timer {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: rgba(255,255,255,0.38);
+  min-width: 36px;
+  text-align: center;
+  letter-spacing: 0.06em;
 }
 
 /* ── TELEPROMPTER — ESTILOS DE CONTEÚDO ────────────────────────── */
