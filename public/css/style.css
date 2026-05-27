@@ -655,14 +655,15 @@ body {
   accent-color: var(--accent);
 }
 
-/* Timer */
+/* Timer — exibe "~45:06" antes de iniciar ou "2:30 / ~43:00" durante a leitura */
 .tp-timer {
   font-family: 'DM Mono', monospace;
   font-size: 12px;
   color: rgba(255,255,255,0.38);
-  min-width: 36px;
+  min-width: 120px;        /* largura suficiente para "00:00 / ~00:00" */
   text-align: center;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
 /* ── TELEPROMPTER — ESTILOS DE CONTEÚDO ────────────────────────── */

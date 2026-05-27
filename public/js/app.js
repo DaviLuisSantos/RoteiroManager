@@ -452,6 +452,31 @@ function changeFont(dir) {
   if (state.current) viewerContent.style.fontSize = FONT_SIZES[fontIdx] + 'px';
 }
 
+// ── TIME HELPERS ──────────────────────────────────────────────────
+function fmtTime(secs) {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+// Calcula o tempo total estimado em segundos (maxScroll ÷ velocidade)
+// Só é preciso quando o painel está ativo e o padding já foi calculado
+function calcTotalSecs(speed) {
+  const max = Math.max(1, tpTrack.offsetHeight - tpPanel.offsetHeight);
+  return Math.round(max / (speed || state.tp.speed));
+}
+
+// Atualiza o display do timer:
+//   • Antes de iniciar:  "~45:06"
+//   • Com tempo decorrido: "2:30 / ~43:00"  (total recalculado pela velocidade atual)
+function updateTpDuration() {
+  const total   = calcTotalSecs(state.tp.speed);
+  const elapsed = state.tp.timerElapsed;
+  $('tp-timer').textContent = elapsed > 0
+    ? `${fmtTime(elapsed)} / ~${fmtTime(total)}`
+    : `~${fmtTime(total)}`;
+}
+
 // ── TELEPROMPTER ──────────────────────────────────────────────────
 function initTeleprompter() {
   if (!state.current) { switchPanel('viewer'); return; }
@@ -461,7 +486,7 @@ function initTeleprompter() {
   $('tp-speed-val').textContent = state.tp.speed;
 
   recalcTpPadding();
-  resetTeleprompter();
+  resetTeleprompter();   // ← chama resetTimer() → updateTpDuration()
 
   // Aplica estado do espelho se estava ativo
   $('tp-content').classList.toggle('mirrored', !!state.tp.mirrored);
@@ -504,11 +529,8 @@ function startTimer() {
   state.tp.timerStart    = Date.now() - (state.tp.timerElapsed * 1000);
   clearInterval(state.tp.timerInterval);
   state.tp.timerInterval = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - state.tp.timerStart) / 1000);
-    state.tp.timerElapsed = elapsed;
-    const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
-    const ss = String(elapsed % 60).padStart(2, '0');
-    $('tp-timer').textContent = `${mm}:${ss}`;
+    state.tp.timerElapsed = Math.floor((Date.now() - state.tp.timerStart) / 1000);
+    updateTpDuration();   // atualiza "elapsed / ~total" — total varia se velocidade mudar
   }, 500);
 }
 
@@ -523,7 +545,7 @@ function stopTimer() {
 function resetTimer() {
   stopTimer();
   state.tp.timerElapsed = 0;
-  $('tp-timer').textContent = '0:00';
+  updateTpDuration();   // mostra "~total" sem elapsed
 }
 
 // ── TP PLAY BUTTON STATE ─────────────────────────────────────────
@@ -754,17 +776,22 @@ $('tp-speed').addEventListener('input', e => {
   state.tp.speed = +e.target.value;
   $('tp-speed-val').textContent = state.tp.speed;
   lsSet('rm_tpSpeed', state.tp.speed);
+  updateTpDuration();   // recalcula total imediatamente ao arrastar o slider
 });
 
 $('tp-font-up').addEventListener('click', () => {
   state.tp.fontSize = Math.min(72, state.tp.fontSize + 4);
   tpText.style.fontSize = state.tp.fontSize + 'px';
   lsSet('rm_tpFontSize', state.tp.fontSize);
+  recalcTpPadding();
+  updateTpDuration();
 });
 $('tp-font-down').addEventListener('click', () => {
   state.tp.fontSize = Math.max(20, state.tp.fontSize - 4);
   tpText.style.fontSize = state.tp.fontSize + 'px';
   lsSet('rm_tpFontSize', state.tp.fontSize);
+  recalcTpPadding();
+  updateTpDuration();
 });
 
 $('tp-mirror-btn').addEventListener('click', toggleMirror);
@@ -800,6 +827,7 @@ document.addEventListener('keydown', e => {
     $('tp-speed').value = state.tp.speed;
     $('tp-speed-val').textContent = state.tp.speed;
     lsSet('rm_tpSpeed', state.tp.speed);
+    updateTpDuration();
   }
   if (e.code === 'ArrowDown') {
     e.preventDefault();
@@ -807,6 +835,7 @@ document.addEventListener('keydown', e => {
     $('tp-speed').value = state.tp.speed;
     $('tp-speed-val').textContent = state.tp.speed;
     lsSet('rm_tpSpeed', state.tp.speed);
+    updateTpDuration();
   }
 });
 
